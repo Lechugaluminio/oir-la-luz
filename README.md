@@ -283,11 +283,21 @@ muestra("auto", vel, pan, 1.4 - energy[k] * 3);
 
 ### Ideas para explorar
 
-- **Paisaje sonoro invertido:** un video de una ciudad que suena a bosque, o un bosque que suena a ciudad.
-- **Sonificación de datos:** el tráfico de una esquina que se escucha como lluvia; la intensidad del movimiento controla la densidad de gotas.
-- **Escucha del cuerpo:** la cámara apunta a quien está frente a la pantalla y cada parte del cuerpo dispara un animal distinto.
-- **Memoria de un lugar:** grabar los sonidos reales de un espacio y hacer que el video de ese mismo espacio los "recuerde" cuando algo se mueve.
-- **Sonido como advertencia:** un sonido que solo aparece cuando el cambio es brusco (el amarillo neón de las partículas).
+Cada idea parte de una relación entre lo que se ve y lo que se escucha. La relación puede ser de **semejanza** (lo que se ve suena a sí mismo), de **contraste** (lo que se ve suena a otra cosa) o de **traducción** (un dato de la imagen controla una cualidad del sonido).
+
+| Imagen (disparador) | Banco de sonidos | Relación | Parámetros que podrían cambiar |
+|---|---|---|---|
+| Una calle con autos y peatones | Bosque: aves, hojas, viento, insectos | Contraste: la ciudad recuerda lo que reemplazó | Más tráfico → más densidad de aves; la velocidad del auto controla el pan |
+| Una bandada en migración | Cantos de pájaros de distintas especies | Semejanza: cada zona del cielo, una especie | La altura de la bandada controla el tono; el tamaño, el volumen |
+| Olas en la orilla | Respiración humana | Traducción: el mar respira | El tamaño de la ola controla el attack; la espuma, el filtro |
+| Una multitud en el metro | Lluvia, de llovizna a tormenta | Traducción: densidad de personas → densidad de gotas | La cantidad de cambio controla el volumen y la reverb |
+| Una cocina mientras se prepara comida | Instrumentos de percusión | Semejanza rítmica: cada gesto, un golpe | Cada zona del mesón, un instrumento; la intensidad, el volumen |
+| Un río o la lluvia sobre un vidrio | Notas de piano o campanas | Traducción: cada gota, una nota | La posición de la gota define la nota; el brillo, el pasa-bajos |
+| La cámara apuntando a quien está frente a la pantalla | Animales: perros, grillos, ballenas | Escucha del cuerpo: cada parte del cuerpo, un animal | La posición horizontal controla el pan; la velocidad, la repetición |
+| Un video de un lugar propio (la casa, el barrio) | Grabaciones reales de ese mismo lugar | Memoria: la imagen "recuerda" su sonido | El cambio brusco dispara sonidos lejanos con mucha reverb |
+| Tráfico nocturno, luces de autos | Cantos de ballenas | Contraste: el flujo de luces como un océano | La duración del cambio controla el release; las luces rojas, el tono grave |
+
+Otras posibilidades: sonido como advertencia (un sonido que solo aparece cuando el cambio es brusco), sonificación de datos (el movimiento de una esquina a lo largo del día) o paisaje sonoro invertido (un bosque que suena a ciudad).
 
 Las preguntas de fondo son las del curso: **¿qué fenómeno seleccionamos?, ¿qué dato producimos realmente?, ¿qué regla traduce ese dato en sonido?, ¿qué queda fuera de la escucha del sistema?**
 
