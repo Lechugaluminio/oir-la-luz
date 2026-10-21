@@ -1,6 +1,6 @@
 # Oír la luz
 
-**Oír la luz** es una herramienta web para **visualizar el sonido y explorar cómo una imagen en movimiento puede convertirse en sonido**. Funciona con un video, con la cámara web o con una escena de ejemplo. La pantalla se divide en zonas y cada zona suena cuando algo cambia dentro de ella.
+**Oír la luz** es una herramienta web para **visualizar el sonido y explorar cómo una imagen en movimiento puede convertirse en sonido**. Funciona con un video, con la cámara web o con una escena de ejemplo. Tiene **cuatro modos de disparo**: zonas que suenan cuando algo cambia dentro de ellas, una línea fija que suena cuando algo la cruza, varias líneas con voces distintas y un escáner que recorre la imagen como una partitura.
 
 La desarrollamos para el curso *Dispositivos periféricos y plataformas para la interacción digital* (DPPI 2026, Escuela de Diseño UDP). Es la demo del **Ejercicio 03 · Escuchar la imagen**.
 
@@ -17,7 +17,45 @@ La herramienta persigue dos objetivos.
 luz → cámara → píxel → cambio → regla → nota → sonido
 ```
 
-La máquina no reconoce autos, manos ni personas. Solo compara cada fotograma con el anterior y cuenta cuántos píxeles cambiaron. Todo lo demás es una **regla que diseñamos** (el *mapping*): qué zona produce qué sonido, con qué intensidad y en qué lugar del espacio.
+La máquina no reconoce autos, manos ni personas. Solo compara cada fotograma con el anterior y cuenta cuántos píxeles cambiaron (o, en el modo escáner, cuánta luz hay). Todo lo demás es una **regla que diseñamos** (el *mapping*): qué zona produce qué sonido, con qué intensidad y en qué lugar del espacio.
+
+## Cuatro modos de disparo
+
+La misma imagen puede sonar de maneras muy distintas según la regla. El panel **01 · Modo** cambia la regla sin tocar el resto de la herramienta.
+
+| Modo | Qué suena | Regla | Controles propios |
+|---|---|---|---|
+| **Zonas** | Cada celda de una grilla, cuando algo se mueve dentro de ella | zona → nota · fila → octava | Columnas, filas (panel 03) |
+| **Línea fija** | Una línea vertical quieta, cuando algo del video la cruza | altura del cruce → nota · posición de la línea → pan | Posición, tramos, dirección → octava |
+| **Varias líneas** | Entre 2 y 4 líneas, cada una con su propia voz | línea → voz (forma de onda, envolvente, octava, filtro) · altura → nota | Cantidad de líneas, tramos, dirección → octava |
+| **Escáner** | Una línea que recorre la imagen de izquierda a derecha | altura → nota · brillo → volumen · tiempo → recorrido | Duración de la vuelta, pasos, brillo mínimo, invertir |
+
+### Línea fija
+
+La línea no se mueve: es el video el que la toca. La línea se divide en **tramos** (3–12); cada tramo es una nota de la escala y el de arriba es el más agudo. Un tramo suena cuando los píxeles que cambian sobre la línea (una franja de 3 px en la imagen de análisis) superan la sensibilidad. Con **dirección → octava** activado, lo que cruza de derecha a izquierda suena una octava más grave: la dirección se calcula con el centro de los píxeles que cambian alrededor de la línea, comparado con el fotograma anterior.
+
+Sirve para preguntas como *¿qué suena cuando alguien cruza una puerta?* o *¿cuántos autos pasan por esta esquina?*
+
+### Varias líneas
+
+Cada línea tiene un color y una voz propia. En este modo la forma de onda, el attack, el release y el pasa-bajos del panel Sonido no se usan, porque cada línea trae los suyos; la reverb y el volumen sí aplican.
+
+| Línea | Voz | Forma de onda | Attack · Release | Octava | Filtro | En un proyecto podría ser |
+|---|---|---|---|---|---|---|
+| 1 · neón | golpe | cuadrada | 3 ms · 180 ms | +1 | pasa-bajos 5000 Hz | `ave.wav` |
+| 2 · blanca | estela | seno | 90 ms · 2400 ms | 0 | — | `auto.wav` |
+| 3 · violeta | lejano | sierra | 20 ms · 1000 ms | −1 | pasa-bajos 650 Hz | `lluvia.wav` |
+| 4 · cian | brillo | triangular | 2 ms · 600 ms | +2 | — | `campana.wav` |
+
+Las voces están en la constante `VOICES` al inicio de `script.js`; cambiarlas es la manera más rápida de probar envolventes distintas.
+
+### Escáner
+
+Funciona como las sonificaciones de imágenes astronómicas de la NASA. Una línea recorre la imagen en una **vuelta** (2–20 s) dividida en **pasos** (8–32). En cada paso, la columna bajo la línea se divide en tramos y suenan los tramos cuyo brillo promedio supera el **brillo mínimo** (como máximo 4 a la vez, los más claros). La altura da la nota y el brillo el volumen. No necesita movimiento: funciona con una imagen quieta. **Invertir** lee lo oscuro en vez de lo claro, útil para fondos blancos.
+
+### Pedirle otros modos a la IA
+
+Estos modos son ejemplos. Otras reglas posibles para pedir en vibecoding: el **color** (lo rojo suena grave, lo azul agudo), el **tamaño** (lo grande suena fuerte), la **cantidad** (mientras más cambio en toda la imagen, más densa la lluvia), el **cuerpo** (con MediaPipe, cada mano o dedo es un instrumento) o el **tiempo** (lo que queda quieto mucho rato también suena).
 
 ---
 
@@ -62,19 +100,19 @@ La interfaz sigue el sistema visual de *Lo que queda* (Computación Avanzada 202
 | Lugar | Qué contiene |
 |---|---|
 | **Barra superior** | Activar / apagar sonido · Pantalla completa (solo el escenario; `Esc` para salir) |
-| **Escenario** | El video con las zonas. Arriba a la izquierda el título y la fuente; abajo a la izquierda la última nota, su frecuencia, la zona y el porcentaje de cambio |
-| **Dock 01–07** | Paneles de parámetros (se abren hacia la izquierda; `Esc` los cierra) |
-| **Ventana 08 · Señal** | Forma de onda, armónicos, envolvente y partitura |
+| **Escenario** | El video con las zonas, líneas o el escáner. Arriba a la izquierda el título y la fuente; abajo a la izquierda la última nota, su frecuencia, dónde sonó y el porcentaje de cambio (o de brillo) |
+| **Dock 01–08** | Paneles de parámetros (se abren hacia la izquierda; `Esc` los cierra) |
+| **Ventana 09 · Señal** | Forma de onda, armónicos, envolvente y partitura |
 | **Barra inferior, izquierda** | Fuente: Ejemplo, Cámara (con *Apagar cámara*), Video (con *Play*, *Pausa*, *Loop* y *Cambiar*) |
 | **Barra inferior, derecha** | Capas que se encienden y apagan: **Líneas**, **Notas**, **Partículas**, **Señal** |
 
 ### Capas del escenario
 
-- **Tono azul.** La zona que suena se tiñe de azul y se desvanece. Siempre está activo; su intensidad se ajusta en el panel 01.
-- **Líneas.** La grilla de 1 px, el marco neón de la zona que suena y una barra fina que muestra cuánto cambio hay en cada zona respecto de la sensibilidad.
+- **Tono azul.** La zona que suena se tiñe de azul y se desvanece. Siempre está activo; su intensidad se ajusta en el panel 02.
+- **Líneas.** En el modo Zonas: la grilla de 1 px, el marco neón de la zona que suena y una barra fina que muestra cuánto cambio hay en cada zona respecto de la sensibilidad. En los otros modos: las líneas de disparo, sus tramos y el cabezal del escáner.
 - **Notas.** El nombre de la nota de cada zona.
 - **Partículas.** Puntos breves donde hay cambio, sin estela: violeta si el cambio es suave, neón si es brusco.
-- **Señal.** La ventana 08.
+- **Señal.** La ventana 09.
 
 Al apagar Líneas, Notas, Partículas y Señal queda **solo el video, el sonido y el tono azul** sobre lo que cambia.
 
@@ -82,13 +120,14 @@ Al apagar Líneas, Notas, Partículas y Señal queda **solo el video, el sonido 
 
 | Panel | Controles |
 |---|---|
-| **01 · Visualización** | Fondo: *Video* o *Máquina* (la máscara de píxeles que cambiaron: todo lo que el sistema "ve") · Intensidad del tono azul · Oscurecer el video |
-| **02 · Teclas** | Columnas (3–12) · Filas (1–3) · Escala (pentatónica mayor, pentatónica menor, mayor, cromática) · Nota base |
-| **03 · Detección** | Umbral por píxel · Sensibilidad por zona · Tiempo mínimo entre repeticiones |
-| **04 · Sonido** | Forma de onda (seno, triangular, cuadrada, sierra) · Attack · Release · Pasa-bajos · Reverb · Volumen |
-| **05 · Mapping** | Intensidad del movimiento → volumen · Posición horizontal → pan · Espejo de la cámara |
-| **06 · Grabar** | Grabar lo que suena y descargarlo · Descargar la última nota aislada |
-| **07 · MIDI** | Conectar un controlador · Asignar perillas a sliders · Borrar asignaciones |
+| **01 · Modo** | Zonas, Línea fija, Varias líneas o Escáner, con los controles propios de cada uno |
+| **02 · Visualización** | Fondo: *Video* o *Máquina* (la máscara de píxeles que cambiaron: todo lo que el sistema "ve") · Intensidad del tono azul · Oscurecer el video |
+| **03 · Teclas** | Columnas (3–12) · Filas (1–3), solo para Zonas · Escala (pentatónica mayor, pentatónica menor, mayor, cromática) · Nota base |
+| **04 · Detección** | Umbral por píxel · Sensibilidad por zona · Tiempo mínimo entre repeticiones |
+| **05 · Sonido** | Forma de onda (seno, triangular, cuadrada, sierra) · Attack · Release · Pasa-bajos · Reverb · Volumen |
+| **06 · Mapping** | Intensidad del movimiento → volumen · Posición horizontal → pan · Espejo de la cámara |
+| **07 · Grabar** | Grabar lo que suena y descargarlo · Descargar la última nota aislada |
+| **08 · MIDI** | Conectar un controlador · Asignar perillas a sliders · Borrar asignaciones |
 
 ---
 
@@ -141,7 +180,7 @@ oscilador → envolvente → pan → pasa-bajos → (seco + reverb) → volumen 
 - **Reverb:** convolución con una respuesta al impulso generada (ruido que decae en 2,6 s). El slider mezcla la señal seca con la reverberada.
 - **Compresor:** evita que muchas notas juntas saturen.
 
-### 5. Visualización de la señal (ventana 08)
+### 5. Visualización de la señal (ventana 09)
 
 | Gráfica | Qué muestra | Qué controles la cambian |
 |---|---|---|
@@ -186,6 +225,13 @@ Las asignaciones se guardan en el `localStorage` del navegador. Cada perilla (me
 | Reverb | 0–100 % | 30 % |
 | Volumen | 0–100 % | 60 % |
 | Tono azul | 0–60 % | 22 % |
+| Modo | 4 opciones | Zonas |
+| Posición de la línea fija | 5–95 % | 50 % |
+| Cantidad de líneas | 2–4 | 3 |
+| Tramos por línea | 3–12 | 7 |
+| Vuelta del escáner | 2–20 s | 6 s |
+| Pasos del escáner | 8–32 | 16 |
+| Brillo mínimo | 30–240 | 90 |
 
 ---
 
@@ -211,8 +257,8 @@ oir-la-luz/
 | `capas` | Botones Líneas, Notas, Partículas y Señal |
 | `audio` | Cadena de Web Audio y función `voice()`, que toca una nota |
 | `descargas` | Grabación, conversión a WAV y descarga |
-| `detección` | Diferencia entre fotogramas, energía por zona y disparo de notas (`analyse()`) |
-| `dibujo` | Escenario, forma de onda, armónicos, envolvente y partitura |
+| `detección` | Diferencia entre fotogramas, energía por zona y disparo de notas (`analyse()`, `fire()`); modos de línea (`lineDetect()`) y escáner (`scanTick()`) |
+| `dibujo` | Escenario (`drawLines()`, `drawScanner()`), forma de onda, armónicos, envolvente y partitura |
 | `controles` | Sliders y estado |
 | `MIDI` | Conexión y asignación de perillas |
 | `bucle` | El ciclo de animación |

@@ -8,7 +8,17 @@
 
   const S = { src: "demo", view: "mix", cols: 5, rows: 3, scale: "pmaj", root: 48, thr: 28, sens: 0.03, cool: 320,
     wave: "triangle", atk: 0.008, rel: 0.7, cut: 3200, rev: 0.3, vol: 0.6, mapVel: true, mapPan: true, mirror: true,
-    tint: 0.22, veil: 0, lines: true, notes: true, parts: true };
+    tint: 0.22, veil: 0, lines: true, notes: true, parts: true,
+    mode: "zonas", lx: 0.5, nl: 3, segs: 7, sdur: 6, steps: 16, bright: 90, mapDir: false, invert: false };
+
+  // voces del modo "Varias líneas": cada línea trae su forma de onda, envolvente, octava y filtro
+  const VOICES = [
+    { name: "golpe", wave: "square", atk: 0.003, rel: 0.18, oct: 12, cut: 5000, color: "#E2FF3B", ej: "ave.wav" },
+    { name: "estela", wave: "sine", atk: 0.09, rel: 2.4, oct: 0, cut: 0, color: "#EEF0FF", ej: "auto.wav" },
+    { name: "lejano", wave: "sawtooth", atk: 0.02, rel: 1.0, oct: -12, cut: 650, color: "#9A7BFF", ej: "lluvia.wav" },
+    { name: "brillo", wave: "triangle", atk: 0.002, rel: 0.6, oct: 24, cut: 0, color: "#5CE1E6", ej: "campana.wav" },
+  ];
+  const rgba = (hex, a) => "rgba(" + parseInt(hex.slice(1, 3), 16) + "," + parseInt(hex.slice(3, 5), 16) + "," + parseInt(hex.slice(5, 7), 16) + "," + a.toFixed(3) + ")";
 
   let toastT = 0;
   function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 2600); }
@@ -137,20 +147,22 @@
     recDest = ac.createMediaStreamDestination();
     main.out.connect(master); master.connect(comp); comp.connect(analyser); analyser.connect(ac.destination); comp.connect(recDest);
   }
-  function voice(ctx, inputs, midi, vel, pan) {
+  function voice(ctx, inputs, midi, vel, pan, opt) {
     const t = ctx.currentTime + 0.01;
-    const o = ctx.createOscillator(); o.type = S.wave; o.frequency.value = mtof(midi);
+    const wave = opt ? opt.wave : S.wave, atk = opt ? opt.atk : S.atk, rel = opt ? opt.rel : S.rel;
+    const o = ctx.createOscillator(); o.type = wave; o.frequency.value = mtof(midi);
     const g = ctx.createGain(), peak = 0.22 * vel, hold = 0.06;
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(peak, t + S.atk);
-    g.gain.setTargetAtTime(peak * 0.6, t + S.atk, 0.08);
-    g.gain.setTargetAtTime(0.0001, t + S.atk + hold, S.rel / 4);
+    g.gain.exponentialRampToValueAtTime(peak, t + atk);
+    g.gain.setTargetAtTime(peak * 0.6, t + atk, 0.08);
+    g.gain.setTargetAtTime(0.0001, t + atk + hold, rel / 4);
     o.connect(g);
     let node = g;
-    if (ctx.createStereoPanner) { const p = ctx.createStereoPanner(); p.pan.value = pan; g.connect(p); node = p; }
+    if (opt && opt.cut) { const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = opt.cut; f.Q.value = 1.2; g.connect(f); node = f; }
+    if (ctx.createStereoPanner) { const p = ctx.createStereoPanner(); p.pan.value = pan; node.connect(p); node = p; }
     inputs.forEach((i) => node.connect(i));
-    o.start(t); o.stop(t + S.atk + hold + S.rel * 1.6 + 0.1);
-    return S.atk + hold + S.rel * 1.6 + 0.1;
+    o.start(t); o.stop(t + atk + hold + rel * 1.6 + 0.1);
+    return atk + hold + rel * 1.6 + 0.1;
   }
   const soundOn = () => ac && ac.state === "running";
   function updSoundBtn() {
@@ -247,7 +259,7 @@
   function srcAspect(src) { if (!src) return 16 / 9; if (src === demo) return 16 / 9; return (video.videoWidth || 16) / (video.videoHeight || 9); }
 
   function analyse(now) {
-    const src = activeSource(); if (!src) { prev = null; return; }
+    const src = activeSource(); if (!src) { prev = null; curGray = null; return; }
     pctx.save();
     if (S.src === "cam" && S.mirror) { pctx.translate(PW, 0); pctx.scale(-1, 1); }
     pctx.drawImage(src, 0, 0, PW, PH); pctx.restore();
@@ -271,7 +283,10 @@
         }
       }
     }
-    prev = gray;
+    const hadPrev = !!prev;
+    prev = gray; curGray = gray;
+    if (S.mode === "linea" || S.mode === "lineas") { if (hadPrev) lineDetect(now); return; }
+    if (S.mode === "escaner") return;
     const cellPx = (PW / S.cols) * (PH / S.rows);
     for (let r = 0; r < S.rows; r++) for (let c = 0; c < S.cols; c++) {
       const k = r * S.cols + c;
@@ -279,15 +294,73 @@
       if (energy[k] > S.sens && now - last[k] > S.cool) {
         last[k] = now; flash[k] = 1;
         const m = cellMidi(c, r), vel = S.mapVel ? Math.min(1, 0.35 + energy[k] * 2.2) : 0.8, pan = S.mapPan ? ((c + 0.5) / S.cols) * 2 - 1 : 0;
-        if (soundOn()) voice(ac, [main.input], m, vel, pan * 0.85);
-        roll.push({ t: now, m }); lastMidi = m; lastFreq = mtof(m); lastNoteT = performance.now(); updScopeCap();
-        $("lastNote").textContent = noteName(m);
-        $("lastHz").textContent = Math.round(mtof(m)) + " Hz";
-        $("lastZone").textContent = (c + 1) + "," + (r + 1);
-        $("lastPct").textContent = Math.round(energy[k] * 100) + " %";
-        $("noteDl").disabled = !soundOn();
+        fire(now, m, vel, pan * 0.85, null, (c + 1) + "," + (r + 1), energy[k]);
       }
     }
+  }
+
+  // una nota disparada por cualquier modo: suena, entra a la partitura y actualiza la lectura
+  function fire(now, m, vel, pan, opt, where, pct) {
+    if (soundOn()) voice(ac, [main.input], m, vel, pan, opt);
+    roll.push({ t: now, m, c: opt ? opt.color : null }); lastMidi = m; lastFreq = mtof(m); lastNoteT = performance.now(); updScopeCap();
+    $("lastNote").textContent = noteName(m);
+    $("lastHz").textContent = Math.round(mtof(m)) + " Hz";
+    $("lastZone").textContent = where;
+    $("lastPct").textContent = Math.round(pct * 100) + " %";
+    $("noteDl").disabled = !soundOn();
+  }
+
+  // ---- modos de línea: la línea queda quieta y suena lo que la cruza ----
+  const MAXL = 4, MAXS = 12;
+  const lEnergy = new Array(MAXL * MAXS).fill(0), lFlash = new Array(MAXL * MAXS).fill(0), lLast = new Array(MAXL * MAXS).fill(0), lCx = new Array(MAXL * MAXS).fill(NaN);
+  let curGray = null;
+  function segMidi(i) { const sc = SCALES[S.scale]; return S.root + sc[i % sc.length] + 12 * Math.floor(i / sc.length); }
+  function lineXs() { if (S.mode === "linea") return [S.lx]; const a = []; for (let i = 0; i < S.nl; i++) a.push((i + 1) / (S.nl + 1)); return a; }
+  function lineDetect(now) {
+    const xs = lineXs(), segH = PH / S.segs;
+    xs.forEach((lx, li) => {
+      const px = Math.min(PW - 2, Math.max(1, Math.round(lx * PW))), v = S.mode === "lineas" ? VOICES[li] : null;
+      for (let s = 0; s < S.segs; s++) {
+        const y0 = Math.floor(s * segH), y1 = Math.max(y0 + 1, Math.floor((s + 1) * segH)), k = li * MAXS + s;
+        let n = 0, sx = 0, sn = 0;
+        for (let y = y0; y < y1; y++) {
+          for (let x = px - 1; x <= px + 1; x++) if (mask[y * PW + x]) n++;
+          for (let x = Math.max(0, px - 10); x <= Math.min(PW - 1, px + 10); x++) if (mask[y * PW + x]) { sx += x; sn++; }
+        }
+        const cx = sn ? sx / sn : NaN, dx = cx - lCx[k]; lCx[k] = cx;
+        lEnergy[k] = lEnergy[k] * 0.4 + (n / (3 * (y1 - y0))) * 0.6;
+        if (lEnergy[k] > S.sens && now - lLast[k] > S.cool) {
+          lLast[k] = now; lFlash[k] = 1;
+          const left = S.mapDir && dx < -0.4;
+          const m = segMidi(S.segs - 1 - s) + (v ? v.oct : 0) - (left ? 12 : 0);
+          const vel = S.mapVel ? Math.min(1, 0.35 + lEnergy[k] * 1.2) : 0.8, pan = S.mapPan ? lx * 2 - 1 : 0;
+          fire(now, m, vel, pan * 0.85, v, (S.mode === "lineas" ? "L" + (li + 1) + " · " : "") + "tramo " + (s + 1) + (left ? " ←" : ""), lEnergy[k]);
+        }
+      }
+    });
+  }
+
+  // ---- escáner: una línea recorre la imagen y lee el brillo como una partitura ----
+  let scanT0 = performance.now(), scanPos = 0, lastStep = -1;
+  const hits = [];
+  function scanTick(now) {
+    scanPos = (((now - scanT0) / 1000) / S.sdur) % 1;
+    const st = Math.floor(scanPos * S.steps);
+    if (st === lastStep) return; lastStep = st;
+    if (!curGray) return;
+    const x0 = Math.floor(st / S.steps * PW), x1 = Math.max(x0 + 1, Math.floor((st + 1) / S.steps * PW)), segH = PH / S.segs, cands = [];
+    for (let s = 0; s < S.segs; s++) {
+      const y0 = Math.floor(s * segH), y1 = Math.max(y0 + 1, Math.floor((s + 1) * segH));
+      let sum = 0; for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) sum += curGray[y * PW + x];
+      const avg = sum / ((y1 - y0) * (x1 - x0)), val = S.invert ? 255 - avg : avg;
+      if (val > S.bright) cands.push({ s, val });
+    }
+    cands.sort((a, b) => b.val - a.val).slice(0, 4).forEach(({ s, val }) => {
+      const m = segMidi(S.segs - 1 - s), k = (val - S.bright) / Math.max(1, 255 - S.bright);
+      const vel = S.mapVel ? Math.min(1, 0.3 + k * 0.7) : 0.8, cx = (x0 + x1) / 2 / PW, pan = S.mapPan ? cx * 2 - 1 : 0;
+      fire(now, m, vel, pan * 0.85, null, "paso " + (st + 1) + " · tramo " + (s + 1), val / 255);
+      hits.push({ x: cx, w: (x1 - x0) / PW, s, life: 1, m });
+    });
   }
 
   // ================= dibujo =================
@@ -324,6 +397,9 @@
       vctx.fillStyle = "rgba(238,240,255,.6)"; vctx.font = Math.round(11 * dpr) + "px 'IBM Plex Mono', monospace"; vctx.textAlign = "center";
       vctx.fillText(S.src === "camoff" ? "CÁMARA APAGADA" : "ESPERANDO IMAGEN", W / 2, H / 2); vctx.textAlign = "start";
     }
+    if (S.parts && S.view !== "mask") drawParts(bx, by, bw, bh, dpr, dt);
+    if (S.mode === "linea" || S.mode === "lineas") { drawLines(bx, by, bw, bh, dpr, dt); return; }
+    if (S.mode === "escaner") { drawScanner(bx, by, bw, bh, dpr, dt); return; }
     // tono azul sobre las zonas que cambian (siempre visible)
     const cw = bw / S.cols, rh = bh / S.rows; ensureGrid();
     for (let r = 0; r < S.rows; r++) for (let c = 0; c < S.cols; c++) {
@@ -331,17 +407,6 @@
       if (f > 0.02) {
         vctx.fillStyle = "rgba(59,59,255," + (S.tint * f).toFixed(3) + ")"; vctx.fillRect(bx + c * cw, by + r * rh, cw, rh);
         flash[k] *= Math.pow(0.12, dt);
-      }
-    }
-    // partículas: puntos breves, sin estela
-    if (S.parts && S.view !== "mask") {
-      for (let i = parts.length - 1; i >= 0; i--) {
-        const p = parts[i]; p.y += p.vy * dt; p.life -= p.decay * dt;
-        if (p.life <= 0) { parts.splice(i, 1); continue; }
-        const a = (p.life * 0.55).toFixed(3);
-        vctx.fillStyle = p.k > 0.55 ? "rgba(226,255,59," + a + ")" : "rgba(150,150,255," + a + ")";
-        const s = (1 + p.k * 1.6) * dpr;
-        vctx.fillRect(bx + p.x * bw - s / 2, by + p.y * bh - s / 2, s, s);
       }
     }
     // líneas: grilla de 1 px, marco de la zona activa y nivel de cambio
@@ -365,6 +430,70 @@
         vctx.fillStyle = f > 0.3 ? "#E2FF3B" : "rgba(238,240,255,.62)";
         vctx.fillText(noteName(cellMidi(c, r)).toUpperCase(), bx + c * cw + 8 * dpr, by + (r + 1) * rh - 12 * dpr);
       }
+    }
+  }
+
+  // partículas: puntos breves, sin estela
+  function drawParts(bx, by, bw, bh, dpr, dt) {
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const p = parts[i]; p.y += p.vy * dt; p.life -= p.decay * dt;
+      if (p.life <= 0) { parts.splice(i, 1); continue; }
+      const a = (p.life * 0.55).toFixed(3);
+      vctx.fillStyle = p.k > 0.55 ? "rgba(226,255,59," + a + ")" : "rgba(150,150,255," + a + ")";
+      const s = (1 + p.k * 1.6) * dpr;
+      vctx.fillRect(bx + p.x * bw - s / 2, by + p.y * bh - s / 2, s, s);
+    }
+  }
+  function drawLines(bx, by, bw, bh, dpr, dt) {
+    const xs = lineXs(), segH = bh / S.segs;
+    vctx.font = Math.round(10 * dpr) + "px 'IBM Plex Mono', monospace";
+    xs.forEach((lx, li) => {
+      const x = Math.round(bx + lx * bw) + 0.5, v = S.mode === "lineas" ? VOICES[li] : null, col = v ? v.color : "#E2FF3B";
+      for (let s = 0; s < S.segs; s++) {   // tono azul en el tramo que suena (siempre visible)
+        const k = li * MAXS + s, f = lFlash[k];
+        if (f > 0.02) { vctx.fillStyle = "rgba(59,59,255," + (S.tint * f * 1.4).toFixed(3) + ")"; vctx.fillRect(x - bw * 0.05, by + s * segH, bw * 0.1, segH); lFlash[k] *= Math.pow(0.12, dt); }
+      }
+      if (S.lines) {
+        vctx.strokeStyle = rgba(col, 0.75); vctx.lineWidth = 1.5 * dpr;
+        vctx.beginPath(); vctx.moveTo(x, by); vctx.lineTo(x, by + bh); vctx.stroke();
+        vctx.strokeStyle = rgba(col, 0.45); vctx.lineWidth = 1; vctx.beginPath();
+        for (let s = 1; s < S.segs; s++) { const y = Math.round(by + s * segH) + 0.5; vctx.moveTo(x - 5 * dpr, y); vctx.lineTo(x + 5 * dpr, y); }
+        vctx.stroke();
+        vctx.lineWidth = 4 * dpr;
+        for (let s = 0; s < S.segs; s++) {
+          const f = lFlash[li * MAXS + s]; if (f < 0.1) continue;
+          vctx.strokeStyle = rgba(col, f); vctx.beginPath(); vctx.moveTo(x, by + s * segH + 2 * dpr); vctx.lineTo(x, by + (s + 1) * segH - 2 * dpr); vctx.stroke();
+        }
+      }
+      if (S.notes) {
+        if (v) { vctx.fillStyle = col; vctx.fillText("L" + (li + 1) + " · " + v.name.toUpperCase(), x + 7 * dpr, by + 16 * dpr); }
+        for (let s = 0; s < S.segs; s++) {
+          const f = lFlash[li * MAXS + s]; if (v && f < 0.3) continue;
+          vctx.fillStyle = f > 0.3 ? "#E2FF3B" : "rgba(238,240,255,.62)";
+          vctx.fillText(noteName(segMidi(S.segs - 1 - s) + (v ? v.oct : 0)).toUpperCase(), x + 7 * dpr, by + (s + 0.5) * segH + 4 * dpr);
+        }
+      }
+    });
+  }
+  function drawScanner(bx, by, bw, bh, dpr, dt) {
+    const segH = bh / S.segs, x = Math.round(bx + scanPos * bw) + 0.5;
+    vctx.font = Math.round(10 * dpr) + "px 'IBM Plex Mono', monospace";
+    for (let i = hits.length - 1; i >= 0; i--) {
+      const h = hits[i]; h.life -= dt * 0.9;
+      if (h.life <= 0) { hits.splice(i, 1); continue; }
+      const cx = bx + h.x * bw, cy = by + (h.s + 0.5) * segH;
+      vctx.fillStyle = "rgba(59,59,255," + (S.tint * h.life * 1.4).toFixed(3) + ")"; vctx.fillRect(bx + (h.x - h.w / 2) * bw, by + h.s * segH, h.w * bw, segH);
+      vctx.fillStyle = rgba("#E2FF3B", Math.min(1, h.life * 1.2)); vctx.beginPath(); vctx.arc(cx, cy, (2 + 3 * h.life) * dpr, 0, Math.PI * 2); vctx.fill();
+      if (S.notes && h.life > 0.55) vctx.fillText(noteName(h.m).toUpperCase(), cx + 8 * dpr, cy + 4 * dpr);
+    }
+    if (S.lines) {
+      vctx.strokeStyle = "rgba(238,240,255,.5)"; vctx.lineWidth = 1; vctx.beginPath();
+      for (let st = 0; st <= S.steps; st++) { const tx = Math.round(bx + st / S.steps * bw) + 0.5; vctx.moveTo(tx, by); vctx.lineTo(tx, by + 4 * dpr); vctx.moveTo(tx, by + bh - 4 * dpr); vctx.lineTo(tx, by + bh); }
+      vctx.stroke();
+      vctx.strokeStyle = "#E2FF3B"; vctx.lineWidth = 1.5 * dpr; vctx.beginPath(); vctx.moveTo(x, by); vctx.lineTo(x, by + bh); vctx.stroke();
+      vctx.strokeStyle = "rgba(226,255,59,.5)"; vctx.lineWidth = 1; vctx.beginPath();
+      for (let s = 1; s < S.segs; s++) { const y = Math.round(by + s * segH) + 0.5; vctx.moveTo(x - 5 * dpr, y); vctx.lineTo(x + 5 * dpr, y); }
+      vctx.stroke();
     }
   }
 
@@ -500,12 +629,12 @@
     if ($("signal").hidden) return;
     const dpr = fit(rollC), W = rollC.width, H = rollC.height, span = 10000;
     rctx.clearRect(0, 0, W, H);
-    const lo = S.root - 2, hi = S.root + 12 * S.rows + 14;
+    const lo = S.mode === "zonas" ? S.root - 2 : S.root - 14, hi = S.mode === "zonas" ? S.root + 12 * S.rows + 14 : S.root + 46;
     rctx.strokeStyle = "rgba(238,240,255,.12)"; rctx.lineWidth = 1;
     for (let m = Math.ceil(lo / 12) * 12; m < hi; m += 12) { const y = Math.round(H - (m - lo) / (hi - lo) * H) + 0.5; rctx.beginPath(); rctx.moveTo(0, y); rctx.lineTo(W, y); rctx.stroke(); }
     for (const n of roll) {
       const age = (now - n.t) / span, x = W - age * W, y = H - (n.m - lo) / (hi - lo) * H;
-      rctx.fillStyle = age < 0.05 ? "#E2FF3B" : "rgba(150,150,255,.85)";
+      rctx.fillStyle = age < 0.05 ? "#E2FF3B" : n.c ? rgba(n.c, 0.85) : "rgba(150,150,255,.85)";
       rctx.fillRect(x - 2 * dpr, y - 1.5 * dpr, 9 * dpr, 3 * dpr);
     }
   }
@@ -518,6 +647,8 @@
     cut: { key: "cut", fmt: (v) => v >= 1000 ? (v / 1000).toFixed(1) + "k" : String(v) },
     rev: { key: "rev", fmt: (v) => v + " %", conv: (v) => v / 100 }, vol: { key: "vol", fmt: (v) => v + " %", conv: (v) => v / 100 },
     tint: { key: "tint", fmt: (v) => v + " %", conv: (v) => v / 100 }, veil: { key: "veil", fmt: (v) => v + " %", conv: (v) => v / 100 },
+    lx: { key: "lx", fmt: (v) => v + " %", conv: (v) => v / 100 }, nl: { key: "nl", fmt: (v) => v }, segs: { key: "segs", fmt: (v) => v },
+    sdur: { key: "sdur", fmt: (v) => v + " s" }, steps: { key: "steps", fmt: (v) => v }, bright: { key: "bright", fmt: (v) => v },
   };
   Object.entries(RANGES).forEach(([id, cfg]) => {
     const el = $(id), out = $(id + "Out");
@@ -530,6 +661,8 @@
     if (["atk", "rel", "cut", "rev", "vol"].includes(key)) { HL = { key, t: performance.now() }; updEnvCap(); }
     if (key === "cols" || key === "rows") { ensureGrid(); $("stKeys").textContent = S.cols + " × " + S.rows; }
     if (key === "cut" && typeof updScopeCap === "function") updScopeCap();
+    if (key === "nl") renderVoices();
+    if (key === "sdur" || key === "steps") lastStep = -1;
     if (key === "sens") $("stDet").textContent = Math.round(S.sens * 100) + " %";
     if (!ac) return;
     if (key === "vol") master.gain.setTargetAtTime(S.vol, ac.currentTime, 0.05);
@@ -547,13 +680,46 @@
     S.view = b.dataset.view; document.querySelectorAll("[data-view]").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); updVisState();
   }));
   function updMap() {
-    const p = ["zona → nota"]; if (S.mapVel) p.push("intensidad → volumen"); if (S.mapPan) p.push("posición x → pan");
+    const M = S.mode, p = [];
+    if (M === "zonas") p.push("zona → nota");
+    if (M === "linea") p.push("altura del cruce → nota");
+    if (M === "lineas") p.push("línea → voz", "altura del cruce → nota");
+    if (M === "escaner") p.push("altura → nota");
+    if (S.mapVel) p.push(M === "escaner" ? "brillo → volumen" : "intensidad → volumen");
+    if (S.mapPan) p.push("posición x → pan");
+    if (S.mapDir && (M === "linea" || M === "lineas")) p.push("dirección → octava");
+    if (M === "escaner") p.push("tiempo → recorrido");
+    $("mapMain").textContent = p[0];
     $("mapText").textContent = p.join(" · "); $("stMap").textContent = p.length + (p.length === 1 ? " regla" : " reglas");
   }
+  const MODE_INFO = {
+    zonas: { name: "zonas", lbl: " · zona ", hint: "La imagen se divide en una grilla: cada zona es una tecla que suena cuando algo se mueve dentro de ella." },
+    linea: { name: "línea fija", lbl: " · ", hint: "Una línea vertical queda quieta y suena cuando algo del video la cruza. La altura del cruce da la nota, la intensidad el volumen y la posición el pan." },
+    lineas: { name: "varias líneas", lbl: " · ", hint: "Varias líneas, cada una con su propia voz: forma de onda, envolvente, octava y filtro. Aquí no aplican la forma de onda, Attack, Release ni Pasa-bajos del panel Sonido, porque cada línea trae los suyos." },
+    escaner: { name: "escáner", lbl: " · ", hint: "Una línea recorre la imagen de izquierda a derecha y la lee como una partitura: en cada paso suenan los tramos claros. La altura da la nota y el brillo el volumen. Funciona incluso con imágenes quietas." },
+  };
+  function renderVoices() {
+    $("voices").innerHTML = VOICES.slice(0, S.nl).map((v, i) => '<li><i style="background:' + v.color + '"></i><span><b>Línea ' + (i + 1) + " · " + v.name + "</b><br>" +
+      WAVE_NAME[v.wave] + " · A " + Math.round(v.atk * 1000) + " ms · R " + Math.round(v.rel * 1000) + " ms" + (v.oct ? " · " + (v.oct > 0 ? "+" : "") + v.oct / 12 + " oct" : "") +
+      (v.cut ? " · pasa-bajos " + v.cut + " Hz" : "") + "<br>en tu proyecto podría ser: " + v.ej + "</span></li>").join("");
+  }
+  function setMode(m) {
+    S.mode = m; prev = null; lEnergy.fill(0); lFlash.fill(0); lCx.fill(NaN); hits.length = 0; flash.fill(0);
+    scanT0 = performance.now(); lastStep = -1;
+    document.querySelectorAll("[data-mode]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.mode === m)));
+    document.querySelectorAll("#pMode [data-show]").forEach((el) => { el.hidden = !el.dataset.show.split(" ").includes(m); });
+    $("modeHint").textContent = MODE_INFO[m].hint; $("stMode").textContent = MODE_INFO[m].name; $("lblZone").textContent = MODE_INFO[m].lbl;
+    $("chain").innerHTML = "luz → cámara → píxel → <b>" + (m === "escaner" ? "brillo" : "cambio") + "</b> → regla → nota → sonido";
+    $("lblPct").textContent = m === "escaner" ? " · brillo " : " · cambio ";
+    $("lastZone").textContent = "—"; updMap();
+  }
+  document.querySelectorAll("[data-mode]").forEach((b) => b.addEventListener("click", () => setMode(b.dataset.mode)));
+  $("mapDir").addEventListener("change", (e) => { S.mapDir = e.target.checked; updMap(); });
+  $("invert").addEventListener("change", (e) => { S.invert = e.target.checked; });
   $("mapVel").addEventListener("change", (e) => { S.mapVel = e.target.checked; updMap(); });
   $("mapPan").addEventListener("change", (e) => { S.mapPan = e.target.checked; updMap(); });
   $("mirror").addEventListener("change", (e) => { S.mirror = e.target.checked; prev = null; });
-  updMap(); updVisState(); updEnvCap(); HL = { key: null, t: 0 };
+  renderVoices(); setMode("zonas"); updVisState(); updEnvCap(); HL = { key: null, t: 0 };
 
   // pantalla completa
   $("fsBtn").addEventListener("click", async () => {
@@ -622,6 +788,7 @@
     if (S.src === "demo") drawDemo(dt);
     acc += dt;
     if (acc >= 1 / 15) { acc = 0; analyse(now); }
+    if (S.mode === "escaner") scanTick(now);
     drawView(dt); drawScope(); drawEnv(); drawRoll(now);
     if (recording) { const s = Math.floor((now - recStart) / 1000), t = Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); $("recTime").textContent = t; $("recBadgeT").textContent = t; }
     requestAnimationFrame(loop);

@@ -88,6 +88,11 @@ select option { background: var(--black) }
 .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 0 }
 .seg button + button { border-left: 0 }
 .checks { display: grid; gap: 8px }
+.seg4 button { padding-inline: 4px }
+.voices { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; border-top: 1px solid var(--line-faint); padding-top: 10px }
+.voices li { display: grid; grid-template-columns: 14px 1fr; gap: 8px; align-items: baseline; font-family: var(--font-mono); font-size: 10px; letter-spacing: .04em; color: var(--gray-1) }
+.voices li i { width: 14px; height: 2px; display: block; transform: translateY(-3px) }
+.voices li b { color: var(--white); font-weight: 400; text-transform: uppercase; letter-spacing: .07em }
 .checks label { display: flex; gap: 8px; align-items: center; font-family: var(--font-mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--gray-1); cursor: pointer }
 .checks input { accent-color: var(--neon); margin: 0 }
 .hint { margin: 0; font-family: var(--font-mono); font-size: 10px; line-height: 1.7; letter-spacing: .03em; color: var(--gray-2) }
