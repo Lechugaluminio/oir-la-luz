@@ -121,6 +121,8 @@ Se quitaron controles de Oír la luz que no tenían sentido aquí: forma de onda
 
 Capturas
 
+<img width="1906" height="897" alt="pulma 1" src="https://github.com/user-attachments/assets/d3885988-69c1-418e-8b6c-e8d8dfc90d72" />
+<img width="1907" height="897" alt="pluma 2" src="https://github.com/user-attachments/assets/d09a5aaf-a5f3-437e-899b-2057fbc640eb" />
 
 
 ---
