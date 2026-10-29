@@ -96,6 +96,7 @@
   // FUENTES
   // =====================================================================
   const video = document.createElement("video");
+  video.addEventListener("error", () => { const f = (video.currentSrc || video.src || "").split("/").pop(); toast("No se pudo cargar el video " + decodeURIComponent(f)); $("status").textContent = "No se pudo cargar " + decodeURIComponent(f); });
   video.muted = true; video.loop = true; video.playsInline = true;
   let stream = null;
   function setSrc(src, status) {
@@ -108,7 +109,8 @@
   }
   function stopStream() { if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; } }
   async function playUrl(url, src, label) {
-    stopStream(); video.srcObject = null; video.src = url; video.loop = $("vLoop").getAttribute("aria-pressed") === "true";
+    stopStream(); video.srcObject = null; video.preload = "auto"; video.src = url; video.loop = $("vLoop").getAttribute("aria-pressed") === "true";
+    $("status").textContent = label + " · cargando video…";
     try { await video.play(); } catch (_) {}
     setSrc(src, label);
   }
@@ -446,6 +448,7 @@
   const PW = 192, PH = 108;
   const proc = document.createElement("canvas"); proc.width = PW; proc.height = PH;
   const pctx = proc.getContext("2d", { willReadFrequently: true });
+  let blockedWarned = false;
   let prev = null, smA = new Uint8Array(PW * PH), smB = new Uint8Array(PW * PH), sm = smA, prevSm = smB;
   const chm = new Uint8Array(PW * PH);
   function region() {
@@ -459,7 +462,14 @@
     pctx.save();
     if (S.src === "cam" && S.mirror) { pctx.translate(PW, 0); pctx.scale(-1, 1); }
     pctx.drawImage(src, 0, 0, PW, PH); pctx.restore();
-    const px = pctx.getImageData(0, 0, PW, PH).data, gray = new Uint8Array(PW * PH);
+    let px;
+    try { px = pctx.getImageData(0, 0, PW, PH).data; }
+    catch (e) {
+      // abierto como archivo (file://): Chrome no deja leer los píxeles del video; se ve, pero no se puede escuchar
+      if (!blockedWarned) { blockedWarned = true; toast("Abre la plataforma desde localhost o GitHub Pages: como archivo, Chrome no deja leer el video"); $("status").textContent = "Lectura bloqueada: abre desde localhost o GitHub Pages"; }
+      return;
+    }
+    const gray = new Uint8Array(PW * PH);
     const tmp = prevSm; prevSm = sm; sm = tmp;
     for (let i = 0, j = 0; i < gray.length; i++, j += 4) {
       const g = (px[j] * 0.3 + px[j + 1] * 0.59 + px[j + 2] * 0.11) | 0; gray[i] = g;
@@ -748,9 +758,14 @@
     drawView(); drawLadder(); drawScore(now);
     rdT += dt; if (rdT > 0.2) { rdT = 0; updReadout(); }
     if (recording) { const s = Math.floor((now - recStart) / 1000), t = Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); $("recTime").textContent = t; $("recBadgeT").textContent = t; }
-    requestAnimationFrame(loop);
+    schedule();
   }
+  // si el navegador deja de animar (ventana oculta o en segundo plano), un temporizador mantiene viva la lectura
+  let pending = false;
+  function schedule() { if (pending) return; pending = true; requestAnimationFrame((t) => { pending = false; loop(t); }); }
+  setInterval(() => { if (performance.now() - lastT > 250) { pending = false; loop(performance.now()); } }, 100);
   updSoundBtn();
   $("bankInfo").textContent = "Activa el sonido para cargar el banco.";
-  requestAnimationFrame(loop);
+  if (location.protocol === "file:") { $("status").textContent = "Abierta como archivo: los sonidos y la lectura del video necesitan localhost o GitHub Pages"; }
+  schedule();
 })();
