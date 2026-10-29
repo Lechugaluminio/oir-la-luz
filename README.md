@@ -2,31 +2,12 @@
 
 **Turbulencia armónica** es una plataforma web para **escuchar el movimiento del aire**. Una pluma de humo, iluminada por una luz LED contra un fondo negro, se convierte en un coro: mientras el humo sube ordenado canta una sola voz; cuando el aire se rompe en remolinos, esa voz se abre en muchas.
 
-Proyecto del Ejercicio 03 · *Escuchar la imagen* · DPPI 2026, Escuela de Diseño UDP. Construida a partir de *Oír la luz* ✏️ (enlace al repositorio original) (Felipe Roa · Santiago Gaete).
-
-**Plataforma:** `https://<usuario>.github.io/<repositorio>/` · **Video:** `<enlace al video de 30–60 s>`
-
-> ✏️ Las partes marcadas con ✏️ son para completar con tu propia voz: decisiones, proceso y reflexión.
-
----
 
 ## 1. Concepto y relación imagen–sonido
 
-El aire es invisible. El humo lo hace visible: cada hilo de humo es una línea de corriente, un registro del movimiento del aire que lo transporta. Una pluma de humo que sube desde una vela pasa por estados reconocibles: primero sube **laminar**, recta y ordenada; luego empieza a **ondular** y a **quebrarse**; arriba **se dispersa** en remolinos.
+Esta aplicación permite escuchar las variaciones de flujo en la pluma de humo de una vela. El sonido cambia según el movimiento activando distintos sonidos extraído s de freesound.og. Me parece interesante ver la turbulencia del humo que no produce ningún sonido ahora esta asociado a ruido, el flujo constante que varia de altura y ancho me pareció apropiado para sonidos de coro.
 
-La plataforma traduce ese recorrido a la **serie armónica**, la estructura física que ordena el sonido de una voz. La altura del humo es la altura del armónico: abajo suena el 2.º armónico de una fundamental grave, arriba el 5.º. El humo que sube recorre la serie armónica.
 
-- **Pluma laminar → una sola voz.** Un hilo de humo ordenado canta un armónico puro, con la vocal cerrada (*u*).
-- **Pluma dispersa → un coro.** Cuando el humo se abre en varios hilos, la voz se multiplica: entran unísonos levemente desafinados y luego la quinta, la tercera y la séptima natural, que son los armónicos siguientes. También aparece el aire, un soplo.
-- **Pluma turbulenta → una voz que se agita.** Cuando el humo se mueve con violencia, la vocal se abre (*u → a*), el sonido se ilumina y la voz tiembla.
-
-Es una relación de **traducción**: la imagen no "suena a sí misma" (el humo no tiene sonido), sino que un dato físico del aire —su orden o su desorden— controla una cualidad del sonido. El nombre lo dice: la turbulencia se vuelve armonía, y el desorden del aire se escucha como la apertura de un acorde.
-
-Queremos que la persona escuche **lo que el aire hace y que el ojo normalmente no registra**: el instante exacto en que un flujo ordenado se rompe.
-
-✏️ *Agrega por qué elegiste el humo y qué te interesa de esta relación.*
-
----
 
 ## 2. Banco de sonidos y disparador
 
@@ -81,24 +62,23 @@ Todos los tramos se normalizaron en volumen y se convirtieron a MP3 (en total, c
 
 | Archivo | Uso en la plataforma | Grabación original | Autor | Licencia |
 |---|---|---|---|---|
-| `coro-0-profundo-mi2.mp3` | voz de coro, 83 Hz (para fundamentales graves) | [696518 · voice choir](https://freesound.org/s/696518/) | 7745 | ✏️ |
-| `coro-1-grave-do-sost3.mp3` | voz de coro, 136 Hz (banda base) | [696518 · voice choir](https://freesound.org/s/696518/) | 7745 | ✏️ |
-| `coro-2-medio-si3.mp3` | voz de coro, 248 Hz (ascenso) | [479941 · men choir](https://freesound.org/s/479941/) | liezen3 | ✏️ |
-| `coro-3-alto-do4.mp3` | voz de coro, 263 Hz (quiebre) | [479941 · men choir](https://freesound.org/s/479941/) | liezen3 | ✏️ |
-| `coro-4-claro-sol-sost4.mp3` | voz de coro, 424 Hz (disolución) | [54622 · redemption choir](https://freesound.org/s/54622/) | aarongnp | ✏️ |
-| `aire-coro-disperso.mp3` | aire de la pluma dispersa | [535751 · scattered choir effect](https://freesound.org/s/535751/) | xhale303 | ✏️ |
-| `acento-1-sting.mp3` | golpe coral (estallidos) | [578334 · choir sting 10](https://freesound.org/s/578334/) | nomiqbomi | ✏️ |
-| `acento-2-golpe.mp3`, `acento-3-golpe.mp3` | golpes corales (estallidos) | [580497 · warrior 120 Gmin choir](https://freesound.org/s/580497/) | aliaref | ✏️ |
-| `ascenso-glissando.mp3` | glissando del quiebre | [76328 · choir glissando crescendo](https://freesound.org/s/76328/) | timbre | ✏️ |
-| `nave-st-pieterkerk.mp3` | resonancia de la nave | [787849 · choir St. Pieterkerk Leuven](https://freesound.org/s/787849/) | jonnibalonni | ✏️ |
-| — | (descargado, no usado: altura inestable) | [51334 · 1](https://freesound.org/s/51334/) | pentm450 | ✏️ |
+| `coro-0-profundo-mi2.mp3` | voz de coro, 83 Hz (para fundamentales graves) | [696518 · voice choir](https://freesound.org/s/696518/) | 7745 
+| `coro-1-grave-do-sost3.mp3` | voz de coro, 136 Hz (banda base) | [696518 · voice choir](https://freesound.org/s/696518/) | 7745 |Creative Commons 0
+| `coro-2-medio-si3.mp3` | voz de coro, 248 Hz (ascenso) | [479941 · men choir](https://freesound.org/s/479941/) | liezen3 | Creative Commons 0
+| `coro-3-alto-do4.mp3` | voz de coro, 263 Hz (quiebre) | [479941 · men choir](https://freesound.org/s/479941/) | liezen3 | Creative Commons 0
+| `coro-4-claro-sol-sost4.mp3` | voz de coro, 424 Hz (disolución) | [54622 · redemption choir](https://freesound.org/s/54622/) | aarongnp | Creative Commons 0
+| `aire-coro-disperso.mp3` | aire de la pluma dispersa | [535751 · scattered choir effect](https://freesound.org/s/535751/) | xhale303 | Creative Commons 0
+| `acento-1-sting.mp3` | golpe coral (estallidos) | [578334 · choir sting 10](https://freesound.org/s/578334/) | nomiqbomi | Creative Commons 0
+| `acento-2-golpe.mp3`, `acento-3-golpe.mp3` | golpes corales (estallidos) | [580497 · warrior 120 Gmin choir](https://freesound.org/s/580497/) | aliaref | Creative Commons 0
+| `ascenso-glissando.mp3` | glissando del quiebre | [76328 · choir glissando crescendo](https://freesound.org/s/76328/) | timbre | Creative Commons 0
+| `nave-st-pieterkerk.mp3` | resonancia de la nave | [787849 · choir St. Pieterkerk Leuven](https://freesound.org/s/787849/) | jonnibalonni | Creative Commons 0
+| — | (descargado, no usado: altura inestable) | [51334 · 1](https://freesound.org/s/51334/) | pentm450 | Creative Commons 0
 | voz sintética | respaldo si las muestras no cargan | síntesis de formantes en el navegador | propio | — |
 
-✏️ *Completa la licencia de cada uno (aparece en su página de freesound) y cuenta cómo los elegiste.*
 
 ### Los videos
 
-✏️ *Cómo grabaste los videos.* Montaje: una vela con un palito de maqueta junto a la mecha, parcialmente tapada con papel aluminio para limitar la ventilación y producir humo; luz LED lateral; fondo negro; cámara fija.
+Los videos fueron grabados por mi, se trata del humo de una vela con un trozo de papel aluminio encima. La idea es que el papel aluminio limita el oxígeno disponible para la llama y genera así una combustion incompleta que da una pluma constante de humo. En los videos mas cortos apago la vela. En el video 4 se aplica una compresa fría por arriba del encuadre para ver si el aire frío afecta el movimiento ascendente de los gases calientes. Para grabar usé una luz led difusa colocada detrás de la vela pero un poco mas abajo ya que genera la mejor visibilidad para el humo.
 
 ---
 
@@ -139,30 +119,15 @@ Se quitaron controles de Oír la luz que no tenían sentido aquí: forma de onda
   - La **partitura del humo** registra los últimos 20 s: la opacidad es la densidad, el grosor es la dispersión y el color es la turbulencia.
   - El estado general se lee en palabras: *aire quieto*, *pluma laminar*, *pluma en quiebre*, *pluma turbulenta*, *pluma dispersa*.
 
-✏️ *Agrega 2 o 3 capturas (por ejemplo en una carpeta `capturas/`):*
+Capturas
 
-![Pluma laminar](capturas/laminar.png)
-![Pluma dispersa](capturas/dispersa.png)
+
 
 ---
 
 ## 4. Reflexión
 
-✏️ *Este apartado es tuyo. Algunas preguntas para partir:*
-
-- ¿Qué descubriste al escuchar el humo? ¿Hubo momentos en que el sonido mostró algo que no habías visto?
-- **Qué queda fuera de la escucha del sistema:**
-  - El sistema no ve el aire, solo el humo iluminado. Donde no hay humo, el aire se mueve en silencio.
-  - Lee brillo, no densidad real: una zona más iluminada parece "más humo".
-  - No distingue un remolino de la cámara que se mueve o de la luz que parpadea.
-  - Ve un plano, no el volumen tridimensional de la pluma.
-- **Mejoras posibles** (elige y desarrolla al menos dos):
-  1. Medir la **dirección** del movimiento (flujo óptico) para distinguir humo que sube de humo que cae, y asignarle otra voz.
-  2. Detectar **remolinos** (rotación) como un evento propio, con su propio sonido.
-  3. Un banco de coro grabado en **varias vocales y alturas**, para que el cambio *u → a* sea real y no solo un filtro.
-  4. Calibración automática del umbral de humo a partir de los primeros segundos de cada video.
-  5. Sensor de temperatura o de flujo de aire conectado por MIDI o serial, para comparar lo que muestra el humo con lo que mide un instrumento.
-
+Me parece interesante que al ver el humo se puede percibir el movimiento del aire circundante. Algunas mejora posibles podrían ser mejorar la detección de remolinos, medir la velocidad del humo con mayor precisión. Y mejorar el set de grabación para poder introducir mayor variabilidad en el flujo de humo.
 ---
 
 ## Cómo usarla
@@ -182,10 +147,3 @@ fonts/       Anaktoria (George Douros, uso libre)
 sonidos/     banco de sonidos
 videos/      videos de humo
 ```
-
-## Créditos
-
-- ✏️ Tu nombre · DPPI 2026 · Escuela de Diseño UDP.
-- Base: *Oír la luz*, de Felipe Roa y Santiago Gaete.
-- Tipografía Anaktoria (George Douros), IBM Plex Sans y Mono (SIL Open Font License).
-- HTML, CSS y JavaScript sin frameworks: Web Audio API, Canvas 2D y MediaRecorder.
