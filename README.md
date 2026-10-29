@@ -129,7 +129,8 @@ Capturas
 
 ## 4. Reflexión
 
-Me parece interesante que al ver el humo se puede percibir el movimiento del aire circundante. Algunas mejora posibles podrían ser mejorar la detección de remolinos, medir la velocidad del humo con mayor precisión. Y mejorar el set de grabación para poder introducir mayor variabilidad en el flujo de humo.
+Me parece interesante que al ver el humo se puede percibir el movimiento del aire circundante. Algunas mejora posibles podrían ser mejorar la detección de remolinos, medir la velocidad del humo con mayor precisión. Y mejorar el set de grabación para poder introducir mayor variabilidad en el flujo de humo. Queda fuera de la ecucha del sistema cuanlquier variacion en el eje Z ya que la camara con la luz solo ver un corte del humo. Una vista zernital de la pulm a de humo darí una lectura diferente. Usé una gráfica amarillo oscuro con negro porque contrasta bién con el blanco y el negro y agrega dinamismo a la escena.
+Tambiense podría experimentar con variaciones de color en el humo por ejemplo agregando una lamina de cobre a la llama se generaría una llama de color verde.
 ---
 
 ## Cómo usarla
